@@ -2,12 +2,12 @@ namespace SwarmOptimization;
 
 public class Problem
 {
-    public Func<double[], double> ObjectiveFunction { get;}
+    public Func<double[], double> FitnessFunction { get;}
     public (double Min, double Max)[]Domain { get; }
     
-    public Problem (Func<double[], double> objectiveFunction, (double Min, double Max)[] domain)
+    public Problem (Func<double[], double> fitnessFunction, (double Min, double Max)[] domain)
     {
-        ObjectiveFunction = objectiveFunction;
+        FitnessFunction = fitnessFunction;
         Domain = domain;
     }
 }
