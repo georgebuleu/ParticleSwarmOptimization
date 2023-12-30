@@ -1,7 +1,5 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmOptimizationOLD", "SwarmOptimizationOLD\SwarmOptimizationOLD.csproj", "{4F5434CC-62AF-453A-B38D-BCA49CD3759D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwarmOptimization", "SwarmOptimization\SwarmOptimization.csproj", "{63C17459-4702-4A91-9AAF-AD668B2A4E7B}"
 EndProject
 Global
@@ -10,10 +8,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4F5434CC-62AF-453A-B38D-BCA49CD3759D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4F5434CC-62AF-453A-B38D-BCA49CD3759D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4F5434CC-62AF-453A-B38D-BCA49CD3759D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4F5434CC-62AF-453A-B38D-BCA49CD3759D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{63C17459-4702-4A91-9AAF-AD668B2A4E7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{63C17459-4702-4A91-9AAF-AD668B2A4E7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63C17459-4702-4A91-9AAF-AD668B2A4E7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
