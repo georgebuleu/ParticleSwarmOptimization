@@ -1,23 +1,27 @@
-using System.Collections;
-using System.ComponentModel;
 
 namespace SwarmOptimization;
 
-public class PSO
+public class Pso
 {
-    private static Particle[] Init(Problem problem)
+    private static Random _rand = new Random();
+    private Problem Problem{get; set;}
+    public Pso(Problem problem)
+    {
+        this.Problem = problem;
+    }
+    private Particle[] Init()
     {
         var swarm = new Particle[Parameters.NumberOfParticles];
-        var rand = new Random();
         for (var i = 0; i < Parameters.NumberOfParticles; i++)
         {
-            var p = new Particle
+            var p = new Particle();
+            for (int x = 0; x < Parameters.SizeOfProblem; x++)
             {
-            Position = Enumerable.Range(0, Parameters.SizeOfProblem - 1)
-                .Select(x => rand.NextDouble() * (problem.Domain[x].Max - problem.Domain[x].Min) + problem.Domain[x].Min)
-                .ToArray(),
-            };
-            p.Cost = problem.FitnessFunction(p.Position);
+                var xMax = Problem.Domain[x].Max;
+                var xMin = Problem.Domain[x].Min;
+                p.Position[x] = GenerateRandomNumber(xMin, xMax);
+            }
+            p.Cost = Problem.FitnessFunction(p.Position);
             p.Velocity = 0;
             p.PersonalBest = p;
             swarm[i] = p;
@@ -26,14 +30,14 @@ public class PSO
         return swarm;
     }
     
-    private static double Limit(double val, double min, double max)
+    private double Limit(double val, double min, double max)
     {
         return Math.Min(Math.Max(val, min), max);
     }
 
-    public static Particle OptimizeGbest(Problem problem)
+    public Particle OptimizeGbest()
     {
-        var swarm = Init(problem);
+        var swarm = Init();
         var rand = new Random();
         var socialBest = swarm[
             swarm.Select(p => p.Cost)
@@ -53,12 +57,12 @@ public class PSO
                    p.Velocity = Limit(p.Velocity, -Parameters.MaxVelocity, Parameters.MaxVelocity);
                }
 
-               for (int d = 0; d < problem.Domain.Length; d++)
+               for (int d = 0; d < Problem.Domain.Length; d++)
                {
                    p.Position[d] += p.Velocity;
-                   p.Position[d] = Limit(p.Position[d], problem.Domain[d].Min, problem.Domain[d].Max);
+                   p.Position[d] = Limit(p.Position[d], Problem.Domain[d].Min, Problem.Domain[d].Max);
                }
-               p.Cost = problem.FitnessFunction(p.Position);
+               p.Cost = Problem.FitnessFunction(p.Position);
                
                if (p.Cost < p.PersonalBest.Cost)
                {
@@ -73,9 +77,9 @@ public class PSO
         return socialBest;
     }
     
-    public static Particle OptimizeLbest(Problem problem)
+    public Particle OptimizeLbest()
     {
-        var swarm = Init(problem);
+        var swarm = Init();
         var rand = new Random();
 
         for (var i = 0; i < Parameters.MaxIterations; i++)
@@ -92,12 +96,12 @@ public class PSO
                     p.Velocity = Limit(p.Velocity, -Parameters.MaxVelocity, Parameters.MaxVelocity);
                 }
 
-                for (int d = 0; d < problem.Domain.Length; d++)
+                for (int d = 0; d < Problem.Domain.Length; d++)
                 {
                     p.Position[d] += p.Velocity;
-                    p.Position[d] = Limit(p.Position[d], problem.Domain[d].Min, problem.Domain[d].Max);
+                    p.Position[d] = Limit(p.Position[d], Problem.Domain[d].Min, Problem.Domain[d].Max);
                 }
-                p.Cost = problem.FitnessFunction(p.Position);
+                p.Cost = Problem.FitnessFunction(p.Position);
                
                 if (p.Cost < p.PersonalBest.Cost)
                 {
@@ -109,7 +113,7 @@ public class PSO
         return swarm.OrderBy(p => p.Cost).First();
     }
 
-    private static Particle[] GetNeighbors(Particle[] swarm, Particle particle)
+    private Particle[] GetNeighbors(Particle[] swarm, Particle particle)
     {
         var x = Array.IndexOf(swarm, particle);
         var indexedArray = swarm.Select((value, index) => new { Index = index, Value = value });
@@ -120,9 +124,14 @@ public class PSO
 
         return closestIndexes;
     }
-    private static Particle GetBestNeighbor(Particle[] swarm, Particle particle)
+    private Particle GetBestNeighbor(Particle[] swarm, Particle particle)
     {
         return GetNeighbors(swarm, particle).OrderBy(p => p.Cost).First();
+    }
+    
+    private double GenerateRandomNumber(double min, double max)
+    {
+        return _rand.NextDouble() * (max - min) + min;
     }
     
 }
