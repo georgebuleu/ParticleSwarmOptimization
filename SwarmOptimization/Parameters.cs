@@ -1,13 +1,13 @@
 namespace SwarmOptimization;
 
-public class Parameters
+public static class Parameters
 {
-    public static int NumberOfParticles { get; set; }
-    public static int SizeOfProblem { get; set; }
+    public static readonly int NumberOfParticles = 20;
+    public static readonly int SizeOfProblem = 2;
     public static double MaxVelocity { get; set; }
-    public static double W { get; set; }
-    public static double C1 { get; set; }
-    public static double C2 { get; set; }
-    public static int MaxIterations { get; set; }
-    public static int SizeOfNeighborhood { get; set; }
+    public static readonly double W = 100;
+    public static readonly double C1 = 2.0;
+    public static readonly double C2 = 2.0;
+    public static readonly int MaxIterations = 100;
+    public static readonly int SizeOfNeighborhood = 10;
 }
