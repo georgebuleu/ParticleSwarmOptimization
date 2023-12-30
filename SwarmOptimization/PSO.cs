@@ -77,10 +77,6 @@ public class PSO
     {
         var swarm = Init(problem);
         var rand = new Random();
-        var socialBest = swarm[
-            swarm.Select(p => p.Cost)
-                .ToList()
-                .IndexOf(swarm.Max(p => p.Cost))];
 
         for (var i = 0; i < Parameters.MaxIterations; i++)
         {
@@ -88,6 +84,7 @@ public class PSO
             {
                 var r1 = rand.NextDouble();
                 var r2 = rand.NextDouble();
+                var socialBest = GetBestNeighbor(swarm, p);
                 for (int d = 0; d < Parameters.SizeOfProblem; d++)
                 {
                     p.Velocity = Parameters.W * p.Velocity + Parameters.C1 * r1 * (p.PersonalBest.Position[d] - p.Position[d])
@@ -105,14 +102,11 @@ public class PSO
                 if (p.Cost < p.PersonalBest.Cost)
                 {
                     p.PersonalBest = p;
-                    if (p.Cost < socialBest.Cost)
-                    {
-                        socialBest = p;
-                    }
                 }
             }
         }
-        return socialBest;
+
+        return swarm.OrderBy(p => p.Cost).First();
     }
 
     private static Particle[] GetNeighbors(Particle[] swarm, Particle particle)
@@ -125,6 +119,10 @@ public class PSO
         var closestIndexes = sortedIndexes.Skip(1).Take(Parameters.SizeOfNeighborhood).Select(item => item.Value).ToArray();
 
         return closestIndexes;
-        
     }
+    private static Particle GetBestNeighbor(Particle[] swarm, Particle particle)
+    {
+        return GetNeighbors(swarm, particle).OrderBy(p => p.Cost).First();
+    }
+    
 }
