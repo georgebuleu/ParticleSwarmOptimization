@@ -7,4 +7,14 @@ public class Particle
     public double Velocity { get; set; }
     public double Cost { get; set; }
     public Particle PersonalBest { get; set; }
+
+    public Particle() {}
+
+    public Particle(double[] position, double velocity, double cost, Particle personalBest)
+    {
+        Position = position;
+        Velocity = velocity;
+        Cost = cost;
+        PersonalBest = personalBest;
+    }
 }
