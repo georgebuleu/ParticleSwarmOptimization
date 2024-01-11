@@ -10,7 +10,7 @@ public class Particle
 
     public Particle()
     {
-        Position = new double[Parameters.SizeOfProblem];
+        Position = new double[Parameters.Dimension];
     }
     
 }

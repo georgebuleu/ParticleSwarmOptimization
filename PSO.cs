@@ -3,7 +3,7 @@ namespace SwarmOptimization;
 
 public class Pso
 {
-    private static Random _rand = new Random();
+    private static Random rand = new Random();
     private Problem Problem{get; set;}
     public Pso(Problem problem)
     {
@@ -15,7 +15,7 @@ public class Pso
         for (var i = 0; i < Parameters.NumberOfParticles; i++)
         {
             var p = new Particle();
-            for (int x = 0; x < Parameters.SizeOfProblem; x++)
+            for (int x = 0; x < Parameters.Dimension; x++)
             {
                 var xMax = Problem.Domain[x].Max;
                 var xMin = Problem.Domain[x].Min;
@@ -38,11 +38,10 @@ public class Pso
     public Particle OptimizeGbest()
     {
         var swarm = Init();
-        var rand = new Random();
-        var socialBest = swarm[
+        var globalBest = swarm[
             swarm.Select(p => p.Cost)
             .ToList()
-            .IndexOf(swarm.Max(p => p.Cost))];
+            .IndexOf(swarm.Min(p => p.Cost))];
 
         for (var i = 0; i < Parameters.MaxIterations; i++)
         {
@@ -50,14 +49,14 @@ public class Pso
             {
                var r1 = rand.NextDouble();
                var r2 = rand.NextDouble();
-               for (int d = 0; d < Parameters.SizeOfProblem; d++)
+               for (int d = 0; d < Parameters.Dimension; d++)
                {
                    p.Velocity = Parameters.W * p.Velocity + Parameters.C1 * r1 * (p.PersonalBest.Position[d] - p.Position[d])
-                       +Parameters.C2*r2*(socialBest.Position[d] - p.Position[d]);
+                       +Parameters.C2*r2*(globalBest.Position[d] - p.Position[d]);
                    p.Velocity = Limit(p.Velocity, -Parameters.MaxVelocity, Parameters.MaxVelocity);
                }
 
-               for (int d = 0; d < Problem.Domain.Length; d++)
+               for (int d = 0; d < Parameters.Dimension; d++)
                {
                    p.Position[d] += p.Velocity;
                    p.Position[d] = Limit(p.Position[d], Problem.Domain[d].Min, Problem.Domain[d].Max);
@@ -67,20 +66,19 @@ public class Pso
                if (p.Cost < p.PersonalBest.Cost)
                {
                    p.PersonalBest = p;
-                   if (p.Cost < socialBest.Cost)
+                   if (p.Cost < globalBest.Cost)
                    {
-                          socialBest = p;
+                          globalBest = p;
                    }
                }
             }
         }
-        return socialBest;
+        return globalBest;
     }
     
     public Particle OptimizeLbest()
     {
         var swarm = Init();
-        var rand = new Random();
 
         for (var i = 0; i < Parameters.MaxIterations; i++)
         {
@@ -88,11 +86,15 @@ public class Pso
             {
                 var r1 = rand.NextDouble();
                 var r2 = rand.NextDouble();
-                var socialBest = GetBestNeighbor(swarm, p);
-                for (int d = 0; d < Parameters.SizeOfProblem; d++)
+                var r3 = rand.NextDouble();
+                var socialBestNeighbors = GetSocialBestNeighbor(swarm, p); 
+                var geoBestNeighbors = GetGeographicalBestNeighbor(swarm, p); 
+                
+                for (int d = 0; d < Parameters.Dimension; d++)
                 {
-                    p.Velocity = Parameters.W * p.Velocity + Parameters.C1 * r1 * (p.PersonalBest.Position[d] - p.Position[d])
-                                                           +Parameters.C2*r2*(socialBest.Position[d] - p.Position[d]);
+                        p.Velocity = Parameters.W * p.Velocity + Parameters.C1 * r1 * (p.PersonalBest.Position[d] - p.Position[d])
+                                                               +Parameters.C2*r2*(socialBestNeighbors.Position[d] - p.Position[d]) + Parameters.C3*r3*(geoBestNeighbors.Position[d] - p.Position[d]);
+                        
                     p.Velocity = Limit(p.Velocity, -Parameters.MaxVelocity, Parameters.MaxVelocity);
                 }
 
@@ -113,25 +115,61 @@ public class Pso
         return swarm.OrderBy(p => p.Cost).First();
     }
 
-    private Particle[] GetNeighbors(Particle[] swarm, Particle particle)
+    private (int Index, Particle Value)[] GetSocialNeighbors(Particle[] swarm, Particle particle)
     {
         var x = Array.IndexOf(swarm, particle);
         var indexedArray = swarm.Select((value, index) => new { Index = index, Value = value });
         
         var sortedIndexes = indexedArray.OrderBy(item => Math.Abs(item.Index - x));
         
-        var closestIndexes = sortedIndexes.Skip(1).Take(Parameters.SizeOfNeighborhood).Select(item => item.Value).ToArray();
-
-        return closestIndexes;
+        return sortedIndexes
+            .Skip(1)
+            .Take(Parameters.SizeOfNeighborhood)
+            .Select(item => (item.Index, item.Value))
+            .ToArray();
     }
-    private Particle GetBestNeighbor(Particle[] swarm, Particle particle)
+    private Particle GetSocialBestNeighbor(Particle[] swarm, Particle particle)
     {
-        return GetNeighbors(swarm, particle).OrderBy(p => p.Cost).First();
+        return GetSocialNeighbors(swarm, particle)
+            .OrderBy(item => item.Value.Cost)
+            .Select(item => item.Value)
+            .First();
+    }
+    
+    private Particle GetGeographicalBestNeighbor(Particle[] swarm, Particle particle)
+    {
+        return GetGeographicalNeighbors(swarm, particle)
+            .OrderBy(item => item.Value.Cost)
+            .Select(item => item.Value)
+            .First();
     }
     
     private double GenerateRandomNumber(double min, double max)
     {
-        return _rand.NextDouble() * (max - min) + min;
+        return rand.NextDouble() * (max - min) + min;
+    }
+    
+    private (int Index, Particle Value )[] GetGeographicalNeighbors(Particle[] swarm, Particle particle)
+    {
+        var x = Array.IndexOf(swarm, particle);
+        var indexedArray = swarm.Select((value, index) => new { Index = index, Value = value });
+        var sortedDistances = indexedArray.OrderBy(item => GetDistance(item.Value, swarm[x]));
+        return sortedDistances
+            .Where(item => item.Index != x)
+            .Take(Parameters.SizeOfNeighborhood)
+            .Select(item => (item.Index, item.Value))
+            .ToArray();
+    } 
+    
+    private double GetDistance(Particle p1, Particle p2)
+    {
+        var sum = 0.0;
+        for (int i = 0; i < Parameters.Dimension; i++)
+        {
+            sum += Math.Pow(p1.Position[i] - p2.Position[i], 2);
+        }
+
+        return Math.Sqrt(sum);
     }
     
 }
