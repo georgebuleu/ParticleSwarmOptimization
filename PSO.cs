@@ -20,24 +20,27 @@ public class Pso
                 var xMax = Problem.Domain[x].Max;
                 var xMin = Problem.Domain[x].Min;
                 p.Position[x] = GenerateRandomNumber(xMin, xMax);
+                //print the position of the particle and it's number
+                //Console.WriteLine($"Particle {i} position: {p.Position[x]}");
+                
             }
             p.Cost = Problem.FitnessFunction(p.Position);
-            p.Velocity = 0;
+            p.Velocity = new double[] { 0.0, 0.0 };
             p.PersonalBest = p;
             swarm[i] = p;
         }
-
         return swarm;
     }
     
     private double Limit(double val, double min, double max)
     {
-        return Math.Min(Math.Max(val, min), max);
+        return val < min ? min : (val > max ? max : val);
     }
 
-    public Particle OptimizeGbest()
+    public Solution OptimizeGbest()
     {
         var swarm = Init();
+        var positions = InitPositionsArray(swarm);
         var globalBest = swarm[
             swarm.Select(p => p.Cost)
             .ToList()
@@ -45,74 +48,80 @@ public class Pso
 
         for (var i = 0; i < Parameters.MaxIterations; i++)
         {
-            foreach (var p in swarm)
-            {
-               var r1 = rand.NextDouble();
-               var r2 = rand.NextDouble();
+            for (var j = 0; j < Parameters.NumberOfParticles; j++)
+            { 
+                var r1 = GenerateRandomR();
+                var r2 = GenerateRandomR();
                for (int d = 0; d < Parameters.Dimension; d++)
                {
-                   p.Velocity = Parameters.W * p.Velocity + Parameters.C1 * r1 * (p.PersonalBest.Position[d] - p.Position[d])
-                       +Parameters.C2*r2*(globalBest.Position[d] - p.Position[d]);
-                   p.Velocity = Limit(p.Velocity, -Parameters.MaxVelocity, Parameters.MaxVelocity);
+                   
+                   swarm[j].Velocity[d] = Parameters.W * swarm[j].Velocity[d] + Parameters.C1 * r1 * (swarm[j].PersonalBest.Position[d] - swarm[j].Position[d])
+                       +Parameters.C2*r2*(globalBest.Position[d] - swarm[j].Position[d]);
+                   swarm[j].Velocity[d] = Limit(swarm[j].Velocity[d], -Parameters.MaxVelocity, Parameters.MaxVelocity);
                }
 
                for (int d = 0; d < Parameters.Dimension; d++)
                {
-                   p.Position[d] += p.Velocity;
-                   p.Position[d] = Limit(p.Position[d], Problem.Domain[d].Min, Problem.Domain[d].Max);
+                   
+                   swarm[j].Position[d] += swarm[j].Velocity[d];
+                   swarm[j].Position[d] = Limit(swarm[j].Position[d], Problem.Domain[d].Min, Problem.Domain[d].Max);
+                   positions[i+1][j][d] = swarm[j].Position[d];
                }
-               p.Cost = Problem.FitnessFunction(p.Position);
+               swarm[j].Cost = Problem.FitnessFunction(swarm[j].Position);
                
-               if (p.Cost < p.PersonalBest.Cost)
+               if (swarm[j].Cost < swarm[j].PersonalBest.Cost)
                {
-                   p.PersonalBest = p;
-                   if (p.Cost < globalBest.Cost)
+                   swarm[j].PersonalBest = swarm[j];
+                   if (swarm[j].Cost < globalBest.Cost)
                    {
-                          globalBest = p;
+                          globalBest = swarm[j];
                    }
                }
             }
         }
-        return globalBest;
+         
+        return new Solution(globalBest, positions, SolutionType.GBEST.ToString());
     }
     
-    public Particle OptimizeLbest()
+    public Solution OptimizeLbest()
     {
         var swarm = Init();
+        var positions = InitPositionsArray(swarm);
 
         for (var i = 0; i < Parameters.MaxIterations; i++)
         {
-            foreach (var p in swarm)
+            for (int j = 0; j < Parameters.NumberOfParticles; j++)
             {
                 var r1 = rand.NextDouble();
                 var r2 = rand.NextDouble();
                 var r3 = rand.NextDouble();
-                var socialBestNeighbors = GetSocialBestNeighbor(swarm, p); 
-                var geoBestNeighbors = GetGeographicalBestNeighbor(swarm, p); 
+                var socialBestNeighbors = GetSocialBestNeighbor(swarm, swarm[j]); 
+                var geoBestNeighbors = GetGeographicalBestNeighbor(swarm, swarm[j]); 
                 
                 for (int d = 0; d < Parameters.Dimension; d++)
                 {
-                        p.Velocity = Parameters.W * p.Velocity + Parameters.C1 * r1 * (p.PersonalBest.Position[d] - p.Position[d])
-                                                               +Parameters.C2*r2*(socialBestNeighbors.Position[d] - p.Position[d]) + Parameters.C3*r3*(geoBestNeighbors.Position[d] - p.Position[d]);
-                        
-                    p.Velocity = Limit(p.Velocity, -Parameters.MaxVelocity, Parameters.MaxVelocity);
+                        swarm[j].Velocity[d] = Parameters.W * swarm[j].Velocity[d] + Parameters.C1 * r1 * (swarm[j].PersonalBest.Position[d] - swarm[j].Position[d])
+                                                               +Parameters.C2*r2*(socialBestNeighbors.Position[d] - swarm[j].Position[d]) + Parameters.C3*r3*(geoBestNeighbors.Position[d] - swarm[j].Position[d]);
+                    swarm[j].Velocity[d] = Limit(swarm[j].Velocity[d], -Parameters.MaxVelocity, Parameters.MaxVelocity);
                 }
 
                 for (int d = 0; d < Problem.Domain.Length; d++)
                 {
-                    p.Position[d] += p.Velocity;
-                    p.Position[d] = Limit(p.Position[d], Problem.Domain[d].Min, Problem.Domain[d].Max);
+                    swarm[j].Position[d] += swarm[j].Velocity[d];
+                    swarm[j].Position[d] = Limit(swarm[j].Position[d], Problem.Domain[d].Min, Problem.Domain[d].Max);
+                    positions[i+1][j][d] = swarm[j].Position[d];
                 }
-                p.Cost = Problem.FitnessFunction(p.Position);
+                swarm[j].Cost = Problem.FitnessFunction(swarm[j].Position);
                
-                if (p.Cost < p.PersonalBest.Cost)
+                if (swarm[j].Cost < swarm[j].PersonalBest.Cost)
                 {
-                    p.PersonalBest = p;
+                    swarm[j].PersonalBest = swarm[j];
                 }
             }
         }
+        var bestParticle = swarm.OrderBy(p => p.Cost).First();
 
-        return swarm.OrderBy(p => p.Cost).First();
+        return new Solution(bestParticle, positions, SolutionType.LBEST.ToString());
     }
 
     private (int Index, Particle Value)[] GetSocialNeighbors(Particle[] swarm, Particle particle)
@@ -148,6 +157,18 @@ public class Pso
     {
         return rand.NextDouble() * (max - min) + min;
     }
+
+    private double GenerateRandomR()
+    {
+        var r = rand.NextDouble();
+        
+        while (r == 0.0)
+        {
+            r = rand.NextDouble();
+        }
+
+        return r;
+    }
     
     private (int Index, Particle Value )[] GetGeographicalNeighbors(Particle[] swarm, Particle particle)
     {
@@ -171,5 +192,27 @@ public class Pso
 
         return Math.Sqrt(sum);
     }
-    
+
+    private double[][][] InitPositionsArray(Particle[] swarm)
+    {
+        var positions = new double[Parameters.MaxIterations + 1][][];
+        
+        
+        for (int i = 0; i < Parameters.MaxIterations + 1; i++)
+        { 
+            positions[i] = new double[Parameters.NumberOfParticles][];
+                for (int j = 0; j < Parameters.NumberOfParticles; j++)
+                {
+                    positions[i][j] = new double[Parameters.Dimension];
+                    if (i == 0)
+                    {
+                        for (int d = 0; d < Parameters.Dimension; d++)
+                        {
+                            positions[i][j][d] = swarm[j].Position[d];
+                        }
+                    }
+                }
+        }
+        return positions;
+    }
 }
